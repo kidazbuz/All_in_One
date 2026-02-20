@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 body {
     margin: 0;
     font-family: sans-serif;
@@ -196,3 +197,203 @@ body {
         font-size: 0.9rem;
     }
 }
+=======
+body {
+    margin: 0;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    overflow: hidden;
+}
+
+.profile-container {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 400px;
+    background-color: #5f7a7d;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+
+    @media (max-width: 768px) {
+        height: 300px;
+    }
+
+    @media (max-width: 576px) {
+        height: 250px;
+    }
+}
+
+.background-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 20% 80%, rgba(100, 149, 237, 0.6) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(135, 206, 250, 0.6) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(173, 216, 230, 0.6) 0%, transparent 50%);
+
+    background-size: 300% 300%;
+    background-position: 0% 0%, 50% 50%, 100% 100%;
+    animation:
+        colorShift 15s infinite ease-in-out alternate,
+        gradientPan 20s infinite linear alternate;
+    filter: grayscale(30%);
+    opacity: 0.9;
+}
+
+// Brand Text Styling and Animation
+.brand-text {
+    position: absolute;
+    color: rgba(255, 255, 255, 0.2); // Very subtle white
+    font-size: 4rem; // Large size
+    font-weight: bold;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    white-space: nowrap; // Keep text on one line
+    pointer-events: none; // Ensure it doesn't interfere with clicks on elements above it
+    z-index: 5; // Below profile card, above gradients
+
+    // Initial position - start off-screen or subtly
+    transform: translate(-50%, -50%) rotate(-10deg); // Slightly rotated for dynamic feel
+    top: 50%;
+    left: 50%;
+    opacity: 0; // Start invisible
+
+    animation: brandTextFlow 25s infinite ease-in-out; // Animation duration and timing
+
+    @media (max-width: 768px) {
+        font-size: 3rem;
+        letter-spacing: 3px;
+    }
+
+    @media (max-width: 576px) {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+}
+
+@keyframes brandTextFlow {
+    0% {
+        transform: translate(-100%, -50%) rotate(-10deg) scale(0.9);
+        opacity: 0;
+    }
+    15% {
+        transform: translate(-50%, -50%) rotate(-5deg) scale(1);
+        opacity: 0.15; // Fade in partially
+    }
+    85% {
+        transform: translate(0%, -50%) rotate(5deg) scale(1.1);
+        opacity: 0.1; // Stay visible but subtle
+    }
+    100% {
+        transform: translate(50%, -50%) rotate(10deg) scale(0.9);
+        opacity: 0; // Fade out
+    }
+}
+
+
+@keyframes colorShift {
+    0% {
+        background-image:
+            radial-gradient(circle at 20% 80%, rgba(100, 149, 237, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(135, 206, 250, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(173, 216, 230, 0.6) 0%, transparent 50%);
+    }
+    33% {
+        background-image:
+            radial-gradient(circle at 20% 80%, rgba(106, 90, 205, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(123, 104, 238, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(147, 112, 219, 0.6) 0%, transparent 50%);
+    }
+    66% {
+        background-image:
+            radial-gradient(circle at 20% 80%, rgba(70, 130, 180, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(95, 158, 160, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(119, 136, 153, 0.6) 0%, transparent 50%);
+    }
+    100% {
+        background-image:
+            radial-gradient(circle at 20% 80%, rgba(100, 149, 237, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(135, 206, 250, 0.6) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(173, 216, 230, 0.6) 0%, transparent 50%);
+    }
+}
+
+@keyframes gradientPan {
+    0% {
+        background-position: 0% 0%, 50% 50%, 100% 100%;
+    }
+    100% {
+        background-position: 100% 100%, 0% 0%, 50% 50%;
+    }
+}
+
+
+.profile-card {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    color: #ffffff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-image-wrapper {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #a7d9f7;
+    padding: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+.profile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profile-name {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+
+    @media (max-width: 768px) {
+        font-size: 2rem;
+    }
+
+    @media (max-width: 576px) {
+        font-size: 1.5rem;
+    }
+}
+
+.profile-title {
+    font-size: 1.2rem;
+    opacity: 0.8;
+
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        font-size: 0.9rem;
+    }
+}
+>>>>>>> 008b481a07bef776493850239814742c7ebc6d3c
