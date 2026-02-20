@@ -1,0 +1,407 @@
+<p-toast />
+
+<div *ngIf="isLoading" class="flex flex-col items-center justify-center py-20">
+  <p-progressSpinner ariaLabel="loading" />
+  <p class="mt-4 font-medium text-surface-500">Initializing Purchasing Module...</p>
+</div>
+
+<div class="font-semibold text-xl mb-4">Manage Purchase Order Details</div>
+<p-tabs value="0">
+    <p-tablist>
+        <p-tab value="0">Supplier Details</p-tab>
+        <p-tab value="1">New Order Line</p-tab>
+        <p-tab value="2" *ngIf="purchaseOrders().length > 0">Order Progress</p-tab>
+        <p-tab value="3" *ngIf="purchaseOrders().length > 0">Receiving Details</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+        <p-tabpanel value="0">
+
+          <div class="flex justify-end mb-4">
+            <p-button label="Create New Supplier" icon="pi pi-plus" size="small" (onClick)="handleCreateSupplierModal()" />
+          </div>
+
+          <p-table [value]="suppliersSignal()" [loading]="supplierLoading()" styleClass="p-datatable-sm" [responsiveLayout]="'scroll'">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="w-16">#</th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Address</th>
+                <th>Created</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item let-i="rowIndex">
+              <tr>
+                <td>{{ i + 1 }}</td>
+                <td class="font-bold">{{ item.name }}</td>
+                <td>
+                <div class="flex flex-col text-xs">
+                <span><i class="pi pi-phone mr-1"></i>{{ item.phone }}</span>
+                <span><i class="pi pi-envelope mr-1"></i>{{ item.email }}</span>
+                </div>
+                </td>
+                <td class="max-w-xs truncate">{{ item.address }}</td>
+                <td>{{ item.created_at | date: 'MMM dd, yyyy' }}</td>
+                <td class="text-center">
+                <div class="flex gap-2 justify-center">
+                <p-button icon="pi pi-pencil" severity="info" [rounded]="true" [text]="true" (onClick)="handleEditSupplierModal(item)" pTooltip="Edit" />
+                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true" (onClick)="handleDeleteSupplierModal(item.id!)" pTooltip="Delete" />
+                </div>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="6" class="text-center py-10 text-surface-400">No suppliers found.</td></tr>
+            </ng-template>
+          </p-table>
+
+        </p-tabpanel>
+        <p-tabpanel value="1">
+
+          <div *ngIf="mode === 'create-po' || mode === 'edit-po'" class="max-w-5xl mx-auto py-4">
+            <form [formGroup]="poForm" (ngSubmit)="onPoSubmit()" class="space-y-8">
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-50 dark:bg-surface-800/50 rounded-lg">
+                <div class="flex flex-col gap-2">
+                  <label class="font-semibold">Supplier <span class="text-red-500">*</span></label>
+                  <p-select [options]="suppliersSignal()" formControlName="supplier" optionLabel="name" optionValue="id" placeholder="Select a Supplier" class="w-full" />
+                  <small class="text-red-500" *ngIf="poForm.get('supplier')?.invalid && poForm.get('supplier')?.touched">Supplier required</small>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <label class="font-semibold">Expected Delivery <span class="text-red-500">*</span></label>
+                  <input type="date" formControlName="expected_delivery_date" class="p-inputtext p-component w-full" />
+                  <small class="text-red-500" *ngIf="poForm.get('expected_delivery_date')?.hasError('server')">
+                    {{ poForm.get('expected_delivery_date')?.getError('server') }}
+                  </small>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                  <h3 class="text-lg font-bold">Line Items</h3>
+                  <p-button label="Add Item" icon="pi pi-plus" size="small" severity="secondary" (onClick)="addItem()" [disabled]="isSubmitting" />
+                </div>
+
+              <div class="border border-surface-200 dark:border-surface-700 rounded-lg">
+                <table class="w-full text-sm">
+                <thead class="bg-surface-100 dark:bg-surface-800">
+                <tr>
+                <th class="p-3 text-left">Product</th>
+                <th class="p-3 text-left w-32">Qty</th>
+                <th class="p-3 text-left w-40">Unit Cost</th>
+                <th class="p-3 text-left w-32">Total</th>
+                <th class="p-3 text-center w-16"></th>
+                </tr>
+                </thead>
+                <tbody formArrayName="items">
+                  <tr *ngFor="let itemGroup of poItems.controls; let i = index" [formGroupName]="i" class="border-t border-surface-200 dark:border-surface-700">
+                    <td class="p-2">
+                    <p-select [options]="products" formControlName="product" optionLabel="name" optionValue="id" [filter]="true" placeholder="Product" class="w-full p-select-sm" />
+                    </td>
+                    <td class="p-2">
+                    <input type="number" formControlName="quantity_ordered" class="p-inputtext p-component w-full" />
+                    </td>
+                    <td class="p-2">
+                    <input type="number" formControlName="unit_cost" class="p-inputtext p-component w-full" />
+                    </td>
+                    <td class="p-2 font-mono font-bold">
+                    {{ (itemGroup.get('quantity_ordered')?.value * itemGroup.get('unit_cost')?.value) | number:'1.2-2' }}
+                    </td>
+                    <td class="p-2 text-center">
+                    <p-button icon="pi pi-times" severity="danger" [text]="true" (onClick)="removeItem(i)" />
+                    </td>
+                  </tr>
+                </tbody>
+                </table>
+              </div>
+              </div>
+
+            <div class="flex justify-end pt-4">
+            <p-button type="submit" [label]="isSubmitting ? 'Saving...' : 'Submit Purchase Order'" icon="pi pi-check" [loading]="isSubmitting" size="large" />
+            </div>
+            </form>
+          </div>
+
+        </p-tabpanel>
+        <p-tabpanel value="2">
+
+          <div class="my-6 space-y-8">
+            @for (group of purchaseOrders() | group; track group.group) {
+
+              <div class="relative flex items-center py-4">
+                <div class="flex-grow border-t border-surface-200 dark:border-surface-700"></div>
+                <span class="flex-shrink mx-4 text-sm font-semibold uppercase tracking-wider text-surface-500">
+                  {{ group.group }}
+                </span>
+                <div class="flex-grow border-t border-surface-200 dark:border-surface-700"></div>
+              </div>
+
+              <p-accordion class="w-full custom-po-accordion">
+                @for (po of group.data; track po.id) {
+
+                  <p-accordion-panel [value]="po.id">
+
+                    <p-accordion-header>
+                      <div class="flex flex-wrap items-center w-full gap-4 text-sm md:text-base">
+                        <div class="flex-1 text-left">
+                          <span class="text-surface-500 mr-2">Order:</span>
+                          <span class="font-bold text-primary">{{ po.po_number }}</span>
+                        </div>
+                        <div class="flex-[2] text-left">
+                          <span class="text-surface-500 mr-2">Supplier:</span>
+                          <span class="font-semibold">{{ po.supplier_name }}</span>
+                        </div>
+                        <div class="flex-1 text-right pr-4">
+                          <span class="hidden md:inline text-surface-400 text-xs uppercase mr-2">Due:</span>
+                          <span class="font-mono">{{ po.po_date | date:'MMM d, y' }}</span>
+                        </div>
+                      </div>
+                    </p-accordion-header>
+
+                    <p-accordion-content>
+                      <div class="overflow-x-auto rounded-lg border border-surface-200 dark:border-surface-700">
+                        <table class="w-full text-sm text-left">
+                          <thead class="bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-0 uppercase text-xs">
+                            <tr>
+                              <th class="p-4">Item ID</th>
+                              <th class="p-4 min-w-[300px]">Product Name</th>
+                              <th class="p-4 text-center">Qty</th>
+                              <th class="p-4 text-center">Unit Cost</th>
+                              <th class="p-4 text-center">Total</th>
+                              <th class="p-4 text-center">Received</th>
+                              <th class="p-4 text-center">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-surface-200 dark:divide-surface-700">
+                            @for (item of po.items; track item.id) {
+                              <tr class="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                                <td class="p-4 text-surface-500">#00{{ item.id }}</td>
+
+                                <td class="p-2">
+                                  <p-select [options]="products"
+                                            [(ngModel)]="item.product"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            [filter]="true"
+                                            appendTo="body"
+                                            placeholder="Select Product"
+                                            [style]="{'width':'100%', 'height': '45px'}" />
+                                </td>
+
+                                <td class="p-2 w-24">
+                                  <input type="number"
+                                         [(ngModel)]="item.quantity_ordered"
+                                         class="p-inputtext w-full h-[45px] text-center" />
+                                </td>
+
+                                <td class="p-4 text-center font-mono">
+                                  {{ item.unit_cost | currency: 'TZS': 'symbol' }}
+                                </td>
+
+                                <td class="p-4 text-center font-bold text-primary">
+                                  {{ (item.quantity_ordered * (item.unit_cost ?? 0)) | currency: 'TZS': 'symbol' }}
+                                </td>
+
+                                <td class="p-4 text-center">
+                                  <span class="px-2 py-1 rounded bg-surface-100 dark:bg-surface-800 font-semibold">
+                                    {{ item.quantity_received_sum ?? 0 }}
+                                  </span>
+                                </td>
+
+                                <td class="p-4 text-center">
+                                  <p-button label="Receptions"
+                                            icon="pi pi-history"
+                                            [outlined]="true"
+                                            size="small"
+                                            severity="secondary"
+                                            (onClick)="$event.stopPropagation(); openAccordionPanel('item-reception-' + item.id)" />
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                          <tfoot class="bg-surface-50 dark:bg-surface-900 font-bold">
+                            <tr>
+                              <td colspan="4" class="p-4 text-right">Total Order Amount:</td>
+                              <td colspan="3" class="p-4 text-primary text-lg">
+                                {{ po.order_total | currency: 'TZS': 'symbol'}}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </p-accordion-content>
+
+                  </p-accordion-panel>
+
+                } @empty {
+                  <div class="p-8 text-center bg-surface-50 rounded-xl border-2 border-dashed border-surface-200">
+                    <p class="text-surface-500 italic">No purchase orders in this group.</p>
+                  </div>
+                }
+              </p-accordion>
+
+            } @empty {
+              <div class="flex flex-col items-center justify-center p-20 bg-surface-50 rounded-2xl border border-surface-200">
+                <i class="pi pi-inbox text-5xl text-surface-300 mb-4"></i>
+                <p class="text-surface-500 font-medium">No purchase orders to display.</p>
+              </div>
+            }
+          </div>
+
+        </p-tabpanel>
+        <p-tabpanel value="3">
+
+          <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
+
+            <div class="flex justify-end mb-4">
+              <p-button
+                label="New Record"
+                icon="pi pi-plus"
+                severity="primary"
+                size="small"
+                (onClick)="openModal()" /> </div>
+
+            <div class="overflow-x-auto rounded-lg border border-surface-200 dark:border-surface-700">
+              <table class="w-full text-sm text-left border-collapse">
+                <thead class="bg-surface-50 dark:bg-surface-800 text-surface-600 dark:text-surface-200 uppercase text-xs font-bold">
+                  <tr>
+                    <th class="p-4 w-12 text-center">#</th>
+                    <th class="p-4">PO Item</th>
+                    <th class="p-4 text-center">Received Qty</th>
+                    <th class="p-4 text-center">Decayed Qty</th>
+                    <th class="p-4 text-center">Date</th>
+                    <th class="p-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-surface-200 dark:divide-surface-700">
+                  @for (record of receptions(); track record.id) {
+                    <tr class="hover:bg-surface-50/50 transition-colors">
+                      <td class="p-4 text-center font-mono text-surface-500">{{ $index + 1 }}</td>
+                      <td class="p-4 font-medium">{{ record.product_name }}</td>
+                      <td class="p-4 text-center">
+                        <span class="px-2 py-1 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-bold">
+                          {{ record.quantity_received }}
+                        </span>
+                      </td>
+                      <td class="p-4 text-center text-red-500 font-bold">{{ record.decayed_products }}</td>
+                      <td class="p-4 text-center text-surface-500 italic">
+                        {{ record.reception_date | date: 'MMM dd, yyyy' }}
+                      </td>
+                      <td class="p-4 text-center">
+                        <div class="flex justify-center gap-2">
+                          <p-button icon="pi pi-pencil" [text]="true" severity="info" (onClick)="openModal(record)" />
+                          <p-button icon="pi pi-trash" [text]="true" severity="danger" (onClick)="deleteReception(record.id)" />
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6" class="p-10 text-center text-surface-400">
+                        <i class="pi pi-info-circle mr-2"></i> No reception records found.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            </div>
+
+        </p-tabpanel>
+    </p-tabpanels>
+</p-tabs>
+
+<p-dialog
+[(visible)]="showReceptionModal"
+[header]="isEditMode() ? 'Edit Reception' : 'New Reception Record'"
+[modal]="true"
+[style]="{ width: '450px' }"
+[draggable]="false"
+(onHide)="closeModal()">
+
+<div class="p-fluid flex flex-col gap-4 mt-2">
+
+  @if (fieldErrors()['non_field_errors']) {
+    <div class="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+      @for (error of fieldErrors()['non_field_errors']; track $index) {
+        <div>{{ error }}</div>
+      }
+    </div>
+  }
+
+  <div class="flex flex-col gap-2">
+    <label class="font-bold text-sm">Purchase order item</label>
+    <p-select
+      [options]="availableItems()"
+      [(ngModel)]="currentReception().purchase_order_item"
+      optionLabel="display"
+      optionValue="id"
+      placeholder="Select PO Item"
+      [filter]="true"
+      appendTo="body"
+      [styleClass]="fieldErrors()['purchase_order_item'] ? 'ng-invalid ng-dirty' : ''" />
+      @if (fieldErrors()['purchase_order_item']) {
+      <small class="text-red-500">{{ fieldErrors()['purchase_order_item']?.[0] }}</small>
+    }
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label class="font-bold text-sm">Quantity received</label>
+    <p-inputnumber
+      [(ngModel)]="currentReception().quantity_received"
+      [min]="1"
+      placeholder="Enter quantity"
+      [styleClass]="fieldErrors()['quantity_received'] ? 'ng-invalid ng-dirty' : ''" />
+      @if (fieldErrors()['quantity_received']) {
+    <small class="text-red-500">{{ fieldErrors()['quantity_received']?.[0] }}</small>
+  }
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label class="font-bold text-sm">Decayed products</label>
+    <p-inputnumber
+      [(ngModel)]="currentReception().decayed_products"
+      [min]="0"
+      placeholder="0"
+      [styleClass]="fieldErrors()['decayed_products'] ? 'ng-invalid ng-dirty' : ''" />
+      @if (fieldErrors()['decayed_products']) {
+      <small class="text-red-500">{{ fieldErrors()['decayed_products']?.[0] }}</small>
+    }
+  </div>
+</div>
+
+<ng-template pTemplate="footer">
+  <div class="flex justify-end gap-2">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="closeModal()" />
+    <p-button [label]="isEditMode() ? 'Save Changes' : 'Create Record'" severity="success" (onClick)="saveReception()" />
+  </div>
+</ng-template>
+</p-dialog>
+
+<p-dialog [header]="supplierModalMode === 'create' ? 'New Supplier' : 'Edit Supplier'" [(visible)]="showSupplierModal" [modal]="true" [style]="{width: '450px'}" class="p-fluid">
+  <form [formGroup]="supplierForm" class="space-y-4 pt-4">
+  <div class="flex flex-col gap-2">
+  <label for="name">Full Name</label>
+  <input pInputText id="name" formControlName="name" />
+  </div>
+  <div class="flex flex-col gap-2">
+  <label for="phone">Phone</label>
+  <input pInputText id="phone" formControlName="phone" />
+  </div>
+  <div class="flex flex-col gap-2">
+  <label for="email">Email</label>
+  <input pInputText id="email" formControlName="email" />
+  </div>
+  <div class="flex flex-col gap-2">
+  <label for="address">Address</label>
+  <textarea pInputTextarea id="address" formControlName="address" rows="3"></textarea>
+  </div>
+  </form>
+<ng-template pTemplate="footer">
+<p-button label="Cancel" icon="pi pi-times" [text]="true" (onClick)="closeModal()" />
+<p-button label="Save Supplier" icon="pi pi-check" (onClick)="onAddOrEditSupplier()" [loading]="supplierLoading()" />
+</ng-template>
+</p-dialog>
+
+<p-confirmDialog />
